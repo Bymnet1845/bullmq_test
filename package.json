@@ -9,6 +9,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "bullmq": "^5.69.2"
+    "bullmq": "^5.69.2",
+    "dotenv": "^17.3.1"
   }
 }
