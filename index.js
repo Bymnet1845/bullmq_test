@@ -40,6 +40,16 @@ const TEST_WORKER = new Worker(
 			while (!done) {
 				const activitiesApiResult = await getActivities(niconicoUserId, activityCursorId);
 
+				if (!activitiesApiResult.activities) {
+					if (activitiesApiResult.code) {
+						throw new Error(activitiesApiResult);
+					} else if (activitiesApiResult.error) {
+						throw new Error(activitiesApiResult.error);
+					} else {
+						throw new Error();
+					}
+				}
+
 				for (let i = 0; i < activitiesApiResult.activities.length; i++) {
 					const activity = activitiesApiResult.activities[i];
 
@@ -97,7 +107,10 @@ async function getActivities(userId, cursorId) {
 			"X-Frontend-Version": 0
 		}
 	}).then((response) => {
+		if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
 		return response.json();
+	}).catch((error) => {
+		return { "error": error };
 	});
 }
 
