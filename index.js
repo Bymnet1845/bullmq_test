@@ -66,8 +66,13 @@ const TEST_WORKER = new Worker(
 
 			if (activities.length > 0) {
 				for (let i = 0; i < activities.length; i++) {
-					await post(activities[i], users[0]["misskey_host"], users[0]["misskey_access_token"]);
-					lastPostedActivity = activities[i];
+					const noteApiResult = await post(activities[i], users[0]["misskey_host"], users[0]["misskey_access_token"]);
+
+					if (noteApiResult.createdNote) {
+						lastPostedActivity = activities[i];
+					} else {
+						break;
+					}
 				}
 
 				await mysqlPool.query(`UPDATE users SET last_acquired_activity_id=:activityId, last_acquired_activity_time=:activityTime WHERE id=:userId`, { activityId: lastPostedActivity.id, activityTime: new Date(lastPostedActivity.createdAt).getTime(), userId: job.data.id });
@@ -125,5 +130,10 @@ async function post(activity, host, accessToken) {
 			text: `テスト\n${activity.message.text}\n${activity.content.title} ${activity.content.url} #ニコニコ動画 #${activity.content.id}`,
 			visibility: "specified"
 		})
-	})
+	}).then((response) => {
+		if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
+		return response.json();
+	}).catch((error) => {
+		return { "error": error };
+	});
 }
