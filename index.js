@@ -64,7 +64,7 @@ const TEST_WORKER = new Worker(
 			}
 		} catch (error) {
 			console.error(error);
-			return;
+			throw new Error(error);
 		}
 	}, { 
 		connection: { host: "localhost", port: 6379 },
@@ -81,7 +81,7 @@ await TEST_QUEUE.obliterate({ force: true }).then(async () => {
 		});
 	} catch (error) {
 		console.error(error);
-		return;
+		throw new Error(error);
 	}
 });
 
