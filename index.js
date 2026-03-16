@@ -23,6 +23,12 @@ const TEST_WORKER = new Worker(
 	async (job) => {
 		try {
 			const [users] = await mysqlPool.query(`SELECT * FROM users WHERE id=:id`, { id: job.data.id });
+
+			if (users.length === 0) {
+				// 繰り返しジョブを削除する処理？←そんなのあんの？
+				return;
+			}
+
 			const lastAcquiredActivityId = users[0]["last_acquired_activity_id"];
 			const lastAcquiredActivityTime = users[0]["last_acquired_activity_time"];
 			const niconicoUserId = users[0]["niconico_id"];
