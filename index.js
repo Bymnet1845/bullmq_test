@@ -76,8 +76,8 @@ await TEST_QUEUE.obliterate({ force: true }).then(async () => {
 	try {
 		const [users] = await mysqlPool.query("SELECT id FROM users");
 
-		users.forEach((user) => {
-			TEST_QUEUE.add(`test_${user.id}_${Date.now()}_0`, { id: user.id }, { repeat: { every: 60000 }, connection: { host: "localhost", port: 6379 }});
+		users.forEach(async (user) => {
+			await TEST_QUEUE.add(`test_${user.id}_${Date.now()}_0`, { id: user.id }, { repeat: { every: 60000 }, connection: { host: "localhost", port: 6379 }});
 		});
 	} catch (error) {
 		console.error(error);
