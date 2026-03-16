@@ -23,20 +23,44 @@ const TEST_WORKER = new Worker(
 	async (job) => {
 		try {
 			const [users] = await mysqlPool.query(`SELECT * FROM users WHERE id=:id`, { id: job.data.id });
-			const result = await getActivities(users[0].niconico_id);
-			
-			for (let activity of result.activities) {
-				if (activity.id === users[0].last_acquired_activity_id) break;
-				await post(activity, users[0].misskey_host, users[0].misskey_access_token);
+			const lastAcquiredActivityId = users[0]["last_acquired_activity_id"];
+			const lastAcquiredActivityTime = users[0]["last_acquired_activity_time"];
+			const niconicoUserId = users[0]["niconico_id"];
+			let done = false;
+			let activities = new Array();
+			let activityCursorId;
+			let lastPostedActivity;
+
+			while (!done) {
+				const activitiesApiResult = await getActivities(niconicoUserId, activityCursorId);
+
+				for (let i = 0; i < activitiesApiResult.activities.length; i++) {
+					const activity = activitiesApiResult.activities[i];
+
+					if (activity.id === lastAcquiredActivityId || new Date(activity.createdAt).getTime() < lastAcquiredActivityTime) {
+						done = true;
+						continue;
+					}
+
+					activities.unshift(activity);
+				}
+
+				activityCursorId = activitiesApiResult.nextCursor;
 			}
 
-			await mysqlPool.query(`UPDATE users SET last_acquired_activity_id=:activityId WHERE id=:userId`, { activityId: result.activities[0].id, userId: job.data.id });
+			if (activities.length > 0) {
+				for (let i = 0; i < activities.length; i++) {
+					await post(activities[i], users[0]["misskey_host"], users[0]["misskey_access_token"]);
+					lastPostedActivity = activities[i];
+				}
+
+				await mysqlPool.query(`UPDATE users SET last_acquired_activity_id=:activityId, last_acquired_activity_time=:activityTime WHERE id=:userId`, { activityId: lastPostedActivity.id, activityTime: new Date(lastPostedActivity.createdAt).getTime(), userId: job.data.id });
+			}
 		} catch (error) {
 			console.error(error);
 			return;
 		}
-	},
-	{ 
+	}, { 
 		connection: { host: "localhost", port: 6379 },
 		limiter: { max: 1, duration: 1000, },
 	}
@@ -55,8 +79,11 @@ await TEST_QUEUE.obliterate({ force: true }).then(async () => {
 	}
 });
 
-async function getActivities(userId) {
-	return await fetch(`https://api.feed.nicovideo.jp/v1/activities/actors/users/${userId}/all?context=user_timeline_${userId}`, {
+async function getActivities(userId, cursorId) {
+	let activityApiUrl = `https://api.feed.nicovideo.jp/v1/activities/actors/users/${userId}/all?context=user_timeline_${userId}`;
+	if (cursorId) activityApiUrl += `&cursor=${cursorId}`;
+
+	return await fetch(activityApiUrl, {
 		method: "GET",
 		headers: {
 			"User-Agent": "OtomadSite/20260216 (Minegumo Productions; Bymnet1845 <bymnet1845@haraheri5ro.com>)",
