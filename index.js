@@ -22,7 +22,7 @@ const TEST_WORKER = new Worker(
 	"test_2026-03-10-04-34",
 	async (job) => {
 		try {
-			const [users, fields] = await mysqlPool.query(`SELECT * FROM users WHERE id=:id`, { id: job.data.id });
+			const [users] = await mysqlPool.query(`SELECT * FROM users WHERE id=:id`, { id: job.data.id });
 			const result = await getActivities(users[0].niconico_id);
 			
 			for (let activity of result.activities) {
