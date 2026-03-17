@@ -44,7 +44,7 @@ const TEST_WORKER = new Worker(
 					if (activitiesApiResult.code) {
 						throw new Error(activitiesApiResult);
 					} else if (activitiesApiResult.error) {
-						throw new Error(activitiesApiResult.error);
+						throw activitiesApiResult.error;
 					} else {
 						throw new Error();
 					}
@@ -79,7 +79,7 @@ const TEST_WORKER = new Worker(
 			}
 		} catch (error) {
 			console.error(error);
-			throw new Error(error);
+			throw error;
 		}
 	}, { 
 		connection: { host: "localhost", port: 6379 },
@@ -96,7 +96,7 @@ await TEST_QUEUE.obliterate({ force: true }).then(async () => {
 		});
 	} catch (error) {
 		console.error(error);
-		throw new Error(error);
+		throw error;
 	}
 });
 
