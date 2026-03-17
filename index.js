@@ -120,7 +120,7 @@ async function getActivities(userId, cursorId) {
 }
 
 async function post(activity, host, accessToken) {
-	await fetch(`https://${host}/api/notes/create`, {
+	return await fetch(`https://${host}/api/notes/create`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json"
