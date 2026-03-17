@@ -91,9 +91,9 @@ await TEST_QUEUE.obliterate({ force: true }).then(async () => {
 	try {
 		const [users] = await mysqlPool.query("SELECT id FROM users");
 
-		users.forEach(async (user) => {
-			await TEST_QUEUE.add(`test_${user.id}_${Date.now()}_0`, { id: user.id }, { repeat: { every: 60000 }, connection: { host: "localhost", port: 6379 }});
-		});
+		for (let i = 0; i < users.length; i++) {
+			await TEST_QUEUE.add(`test_${users[i].id}_${Date.now()}_0`, { id: users[i].id }, { repeat: { every: 60000 }, connection: { host: "localhost", port: 6379 }});
+		}
 	} catch (error) {
 		console.error(error);
 		throw error;
